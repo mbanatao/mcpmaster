@@ -179,7 +179,7 @@ const LAW_OFFICE_PATTERNS: ReadonlyArray<{
   },
   {
     reason: 'outcome_prediction',
-    pattern: /\b(?:will (?:i|we) win|chance of winning|likely outcome|guaranteed result|case is worth)\b/i,
+    pattern: /\b(?:will (?:i|we|you|they) win|(?:i|we|you|they) will win|chance of winning|likely outcome|guaranteed result|case is worth)\b/i,
   },
 ];
 
