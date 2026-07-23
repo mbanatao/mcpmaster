@@ -171,6 +171,12 @@ cross join (
 ) as approval(id, step_id, action_hash, preview_redacted)
 where organization.slug = 'batalla-associates';
 
+select set_config(
+  'app.test_org_id',
+  (select id::text from public.organizations where slug = 'batalla-associates'),
+  true
+);
+
 set local role authenticated;
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-000000000002', true);
 select set_config('request.jwt.claim.role', 'authenticated', true);
@@ -204,10 +210,13 @@ select throws_ok(
       requester_id,
       idempotency_key
     )
-    select id, 'unauthorized.workflow', '1.0.0',
-      '00000000-0000-0000-0000-000000000003', 'unauthorized-run'
-    from public.organizations
-    where slug = 'batalla-associates'
+    values (
+      current_setting('app.test_org_id')::uuid,
+      'unauthorized.workflow',
+      '1.0.0',
+      '00000000-0000-0000-0000-000000000003',
+      'unauthorized-run'
+    )
   $$,
   '42501',
   null,
