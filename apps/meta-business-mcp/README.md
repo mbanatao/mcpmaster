@@ -2,28 +2,24 @@
 
 This application is the isolated Meta Business domain boundary for MCPMaster.
 
-The governing operating rule is:
-
 > AI drafts. A human approves. The MCP sends.
 
 ## Current milestone
 
-This branch contains:
+The application now contains:
 
-- the typed 17-tool catalog;
-- deterministic Page allowlisting;
-- exact action hashing for approval binding;
-- idempotency, network-mode, independent-approval, and kill-switch policy checks;
-- audit redaction primitives;
-- law-office legal-risk classification;
-- fail-safe configuration parsing;
-- a typed Meta provider port;
-- a non-networked synthetic provider implementing all eight read tools;
-- tenant-scoped in-memory draft storage;
-- executable post, comment-reply, message-reply, and weekly-plan drafts;
-- synthetic unit and security-negative tests.
-
-It does **not** contain an official Meta API client, OAuth callback, remote MCP server, webhook receiver, token resolver, network request, deployment configuration, or production credential.
+- the complete 17-tool catalog and law-office policy boundary;
+- exact Page allowlisting, approval hashing, audit redaction, idempotency, and kill-switch checks;
+- a non-networked synthetic provider and internal draft tools;
+- a separately composed official Meta **read-only** provider;
+- server-side secret-reference interfaces with no raw-token environment support;
+- fixed-origin, version-pinned Graph API GET requests with bounded response size and timeouts;
+- an official-network read executor that cannot execute draft or write tools;
+- HMAC-SHA256 webhook delivery verification using `X-Hub-Signature-256`;
+- webhook verification-challenge handling;
+- Page allowlisting, replay deduplication, payload-size limits, and redacted delivery metadata;
+- webhook health tracking without storing message bodies in ordinary health records;
+- mocked integration and security-negative tests.
 
 ## Current application structure
 
@@ -32,17 +28,16 @@ apps/meta-business-mcp/
   src/
     drafts/
     meta/
+    runtime/
+    secrets/
     security/
     tools/
+    webhooks/
   docs/
   test/
 ```
 
-The future `mcp`, `webhooks`, `approvals`, and persistent `audit` adapters are not yet implemented.
-
-## Tool groups
-
-### Read
+## Read tools
 
 - `meta_page_get`
 - `meta_page_list_posts`
@@ -53,18 +48,27 @@ The future `mcp`, `webhooks`, `approvals`, and persistent `audit` adapters are n
 - `meta_page_get_insights`
 - `meta_webhook_health`
 
-All eight read tools currently execute only against the synthetic provider. The read/draft executor rejects any provider marked network-capable.
+Synthetic reads remain available through `MetaReadDraftExecutor`. Official provider reads use the separate `MetaNetworkReadExecutor`, which requires explicit network configuration and an exact Page allowlist.
 
-### Draft only
+The official provider:
+
+- uses only `GET` requests;
+- resolves the Page token from a server-side secret reference for each request;
+- sends the token only in the `Authorization: Bearer` header;
+- fixes the origin to `https://graph.facebook.com`;
+- requires an explicit Graph API version;
+- rejects unsafe path segments, redirects, oversized responses, invalid JSON, and Graph API errors.
+
+## Draft tools
 
 - `meta_post_create_draft`
 - `meta_comment_create_reply_draft`
 - `meta_message_create_reply_draft`
 - `meta_content_create_weekly_plan`
 
-Draft tools store internal draft records and never publish, schedule, reply, or send content. Legal-risk drafts remain available for staff review but are visibly flagged.
+Draft tools remain internal. They never publish, schedule, reply, or send content. Legal-risk drafts remain available for staff review but are visibly flagged.
 
-### External writes
+## External writes
 
 - `meta_post_publish`
 - `meta_post_schedule`
@@ -72,35 +76,50 @@ Draft tools store internal draft records and never publish, schedule, reply, or 
 - `meta_message_send`
 - `meta_post_delete`
 
-Every external write must eventually have authenticated staff identity, an exact Page allowlist match, an approved action hash, an idempotency key, audit evidence, explicit network enablement, and the emergency kill switch disabled. Post deletion is classified R3 and requires independent approval.
+There is still no official write provider and no write executor. Every external write throws `MetaWriteExecutionDisabledError`.
 
-The current executor throws `MetaWriteExecutionDisabledError` for every write tool. There is no write provider method or network mutation path in this milestone.
+Future writes must require authenticated staff identity, an exact Page match, a visible preview, an approved action hash, idempotency, an audit event, explicit network enablement, and kill-switch clearance. Post deletion remains R3 and requires an independent approver.
+
+## Webhook boundary
+
+Webhook delivery processing requires the exact raw request body and verifies the `X-Hub-Signature-256` HMAC before parsing JSON. It then:
+
+1. derives a SHA-256 delivery identity;
+2. rejects duplicate replays within the configured window;
+3. accepts only Page webhook objects;
+4. rejects non-allowlisted Page IDs;
+5. records only Page IDs, event categories, hashes, timestamps, and health state.
+
+The webhook processor does not expose a public HTTP route in this milestone. A future ingress adapter must preserve the raw body bytes and pass them to this verifier unchanged.
+
+## Configuration
+
+The legacy safe configuration remains available through `loadMetaBusinessConfig`. The official read/webhook runtime uses `loadMetaLiveConfig`, which additionally requires:
+
+- `META_GRAPH_API_VERSION`;
+- `META_REQUEST_TIMEOUT_MS` within the allowed range;
+- `META_WEBHOOK_VERIFY_TOKEN_SECRET_REF` when webhooks are enabled;
+- `META_WEBHOOK_MAX_BODY_BYTES` within the allowed range.
+
+See `env.example`. All credential values are secret references, never raw tokens or app secrets.
 
 ## Law-office boundary
 
-The deterministic policy escalates content involving:
-
-- legal advice;
-- merits or case strategy;
-- deadlines and limitation periods;
-- fees or engagement terms;
-- conflict clearance;
-- confidential case facts;
-- outcome predictions.
+The deterministic policy escalates content involving legal advice, merits, strategy, deadlines, limitation periods, fees, engagement terms, conflict clearance, confidential case facts, or outcome predictions.
 
 This classifier is a safety gate, not a legal-analysis system. Provider content remains untrusted and final outbound content requires human review.
 
-## Local verification
+## Verification
 
 From the repository root:
 
 ```bash
-npm run build
+npm run check
 npm test
 ```
 
-Tests use synthetic identifiers and content only.
+Tests use mocked transports, synthetic identifiers, synthetic tokens, and synthetic webhook payloads. They never call Meta or publish content.
 
 ## Explicit hold points
 
-Do not create or connect a Meta application, add real tokens, request production permissions, connect a production Page, deploy this app, publish content, or send messages without separate explicit approval.
+Do not create or connect a Meta application, add real tokens, request production permissions, connect a production Page, expose a public webhook endpoint, deploy this application, publish content, or send messages without separate explicit approval.
