@@ -1,0 +1,4 @@
+-- Intentionally empty.
+--
+-- Database tests create synthetic users and tenant data inside transactions.
+-- Do not place production identities, Facebook content, tokens, or client data here.
