@@ -4,9 +4,12 @@
   "description": "MCPMaster approval-gated workflow and connector runtime",
   "main": "dist/http-server.js",
   "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "check": "tsc -p tsconfig.json --noEmit",
-    "test": "npm run build && node --test test/*.test.js",
+    "build:runtime": "tsc -p tsconfig.json",
+    "build:shared-security": "tsc -p packages/shared-security/tsconfig.json",
+    "build:meta": "tsc -p apps/meta-business-mcp/tsconfig.json",
+    "build": "npm run build:runtime && npm run build:shared-security && npm run build:meta",
+    "check": "tsc -p tsconfig.json --noEmit && npm run build:shared-security && tsc -p apps/meta-business-mcp/tsconfig.json --noEmit",
+    "test": "npm run build && node --test test/*.test.js packages/shared-security/test/*.test.js apps/meta-business-mcp/test/*.test.js",
     "start": "node dist/http-server.js",
     "dev": "ts-node src/http-server.ts",
     "start:mcp": "node dist/mcp-stdio.js",
@@ -27,8 +30,8 @@
     "approval-gates",
     "audit",
     "github",
-    "notion",
-    "linear"
+    "meta-business",
+    "law-office"
   ],
   "author": "EdenOS Team",
   "license": "MIT",

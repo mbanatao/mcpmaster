@@ -1,0 +1,195 @@
+import type { RiskClass } from '../../../../packages/shared-security/dist/index';
+
+export type MetaToolMode = 'read' | 'draft' | 'write';
+export type MetaApprovalRequirement = 'none' | 'single' | 'dual';
+export type MetaDataClass = 'business_public' | 'business_internal' | 'personal_data';
+
+export interface MetaToolDefinition {
+  name: string;
+  description: string;
+  mode: MetaToolMode;
+  risk: RiskClass;
+  approval: MetaApprovalRequirement;
+  requiredCapabilities: readonly string[];
+  dataClass: MetaDataClass;
+  pageAllowlistRequired: true;
+}
+
+export const metaToolCatalog = [
+  {
+    name: 'meta_page_get',
+    description: 'Read the configured Facebook Page profile and public business metadata.',
+    mode: 'read',
+    risk: 'R0',
+    approval: 'none',
+    requiredCapabilities: ['pages.read'],
+    dataClass: 'business_public',
+    pageAllowlistRequired: true,
+  },
+  {
+    name: 'meta_page_list_posts',
+    description: 'List posts for the configured Facebook Page.',
+    mode: 'read',
+    risk: 'R0',
+    approval: 'none',
+    requiredCapabilities: ['content.read'],
+    dataClass: 'business_public',
+    pageAllowlistRequired: true,
+  },
+  {
+    name: 'meta_post_get',
+    description: 'Read one Page post by its provider identifier.',
+    mode: 'read',
+    risk: 'R0',
+    approval: 'none',
+    requiredCapabilities: ['content.read'],
+    dataClass: 'business_public',
+    pageAllowlistRequired: true,
+  },
+  {
+    name: 'meta_post_list_comments',
+    description: 'List comments on a configured Page post.',
+    mode: 'read',
+    risk: 'R0',
+    approval: 'none',
+    requiredCapabilities: ['comments.read'],
+    dataClass: 'personal_data',
+    pageAllowlistRequired: true,
+  },
+  {
+    name: 'meta_inbox_list_threads',
+    description: 'List business inbox threads without sending a message.',
+    mode: 'read',
+    risk: 'R0',
+    approval: 'none',
+    requiredCapabilities: ['messages.read'],
+    dataClass: 'personal_data',
+    pageAllowlistRequired: true,
+  },
+  {
+    name: 'meta_inbox_get_thread',
+    description: 'Read a selected business inbox thread.',
+    mode: 'read',
+    risk: 'R0',
+    approval: 'none',
+    requiredCapabilities: ['messages.read'],
+    dataClass: 'personal_data',
+    pageAllowlistRequired: true,
+  },
+  {
+    name: 'meta_page_get_insights',
+    description: 'Read approved Page-level performance metrics.',
+    mode: 'read',
+    risk: 'R0',
+    approval: 'none',
+    requiredCapabilities: ['insights.read'],
+    dataClass: 'business_internal',
+    pageAllowlistRequired: true,
+  },
+  {
+    name: 'meta_webhook_health',
+    description: 'Report webhook verification, delivery, and processing health.',
+    mode: 'read',
+    risk: 'R0',
+    approval: 'none',
+    requiredCapabilities: ['webhooks.health'],
+    dataClass: 'business_internal',
+    pageAllowlistRequired: true,
+  },
+  {
+    name: 'meta_post_create_draft',
+    description: 'Create an internal Page-post draft without publishing it.',
+    mode: 'draft',
+    risk: 'R0',
+    approval: 'none',
+    requiredCapabilities: ['content.draft'],
+    dataClass: 'business_internal',
+    pageAllowlistRequired: true,
+  },
+  {
+    name: 'meta_comment_create_reply_draft',
+    description: 'Create an internal draft response to a Page comment.',
+    mode: 'draft',
+    risk: 'R0',
+    approval: 'none',
+    requiredCapabilities: ['comments.read', 'content.draft'],
+    dataClass: 'personal_data',
+    pageAllowlistRequired: true,
+  },
+  {
+    name: 'meta_message_create_reply_draft',
+    description: 'Create an internal draft response to an inbox message.',
+    mode: 'draft',
+    risk: 'R0',
+    approval: 'none',
+    requiredCapabilities: ['messages.read', 'content.draft'],
+    dataClass: 'personal_data',
+    pageAllowlistRequired: true,
+  },
+  {
+    name: 'meta_content_create_weekly_plan',
+    description: 'Create an internal weekly content plan without scheduling or publishing.',
+    mode: 'draft',
+    risk: 'R0',
+    approval: 'none',
+    requiredCapabilities: ['content.draft'],
+    dataClass: 'business_internal',
+    pageAllowlistRequired: true,
+  },
+  {
+    name: 'meta_post_publish',
+    description: 'Publish an exactly approved Page post.',
+    mode: 'write',
+    risk: 'R2',
+    approval: 'single',
+    requiredCapabilities: ['content.publish'],
+    dataClass: 'business_public',
+    pageAllowlistRequired: true,
+  },
+  {
+    name: 'meta_post_schedule',
+    description: 'Schedule an exactly approved Page post for a future time.',
+    mode: 'write',
+    risk: 'R2',
+    approval: 'single',
+    requiredCapabilities: ['content.publish'],
+    dataClass: 'business_public',
+    pageAllowlistRequired: true,
+  },
+  {
+    name: 'meta_comment_reply',
+    description: 'Send an exactly approved reply to a Page comment.',
+    mode: 'write',
+    risk: 'R2',
+    approval: 'single',
+    requiredCapabilities: ['comments.manage'],
+    dataClass: 'personal_data',
+    pageAllowlistRequired: true,
+  },
+  {
+    name: 'meta_message_send',
+    description: 'Send an exactly approved business inbox message.',
+    mode: 'write',
+    risk: 'R2',
+    approval: 'single',
+    requiredCapabilities: ['messages.send'],
+    dataClass: 'personal_data',
+    pageAllowlistRequired: true,
+  },
+  {
+    name: 'meta_post_delete',
+    description: 'Delete a Page post after independent high-risk approval.',
+    mode: 'write',
+    risk: 'R3',
+    approval: 'dual',
+    requiredCapabilities: ['content.delete'],
+    dataClass: 'business_public',
+    pageAllowlistRequired: true,
+  },
+] as const satisfies readonly MetaToolDefinition[];
+
+export type MetaToolName = (typeof metaToolCatalog)[number]['name'];
+
+export function getMetaToolDefinition(name: string): MetaToolDefinition | undefined {
+  return metaToolCatalog.find((tool) => tool.name === name);
+}

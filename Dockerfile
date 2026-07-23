@@ -8,6 +8,8 @@ RUN npm ci
 
 COPY tsconfig.json ./
 COPY src/ ./src/
+COPY packages/ ./packages/
+COPY apps/ ./apps/
 RUN npm run build
 
 # Run only compiled JavaScript and production dependencies.
