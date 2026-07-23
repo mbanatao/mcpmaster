@@ -16,11 +16,13 @@ export interface MetaInvocationContext {
   pageId: string;
   allowedPageIds: readonly string[];
   requesterId: string;
+  approverId?: string;
   arguments: Record<string, unknown>;
   idempotencyKey?: string;
   approvalDecision?: 'approved' | 'denied' | 'pending' | 'expired' | 'revoked';
   approvedActionHash?: string;
   killSwitchActive: boolean;
+  networkEnabled: boolean;
   legalReviewConfirmed?: boolean;
 }
 
@@ -83,6 +85,7 @@ export function evaluateMetaInvocation(
   const reasons: string[] = [];
   const staffId = context.staffId.trim();
   const requesterId = context.requesterId.trim();
+  const approverId = context.approverId?.trim() ?? '';
   const textEvaluation = evaluateLawOfficeText(outboundText(context.arguments));
   const requiresLegalReview = textEvaluation.disposition === 'legal_review_required';
   const requiresHumanApproval = tool.mode === 'write';
@@ -115,6 +118,14 @@ export function evaluateMetaInvocation(
     };
   }
 
+  if (!context.networkEnabled) {
+    reasons.push('meta_network_disabled');
+  }
+
+  if (requiresIndependentApproval && (!approverId || approverId === requesterId)) {
+    reasons.push('independent_approver_required');
+  }
+
   const writeResult: ExternalWriteAuthorizationResult = authorizeExternalWrite({
     staffId,
     pageId: context.pageId,
@@ -129,15 +140,16 @@ export function evaluateMetaInvocation(
   });
 
   reasons.push(...writeResult.reasons);
+  const uniqueReasons = [...new Set(reasons)];
 
   return {
-    allowed: reasons.length === 0,
+    allowed: uniqueReasons.length === 0,
     tool,
     actionHash,
-    reasons: [...new Set(reasons)],
+    reasons: uniqueReasons,
     requiresHumanApproval,
     requiresIndependentApproval,
     requiresLegalReview: writeResult.requiresLegalReview,
-    networkMutationAllowed: reasons.length === 0,
+    networkMutationAllowed: uniqueReasons.length === 0,
   };
 }
