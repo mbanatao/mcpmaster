@@ -2,6 +2,7 @@
   "compilerOptions": {
     "target": "ES2020",
     "module": "commonjs",
+    "moduleResolution": "node",
     "lib": ["ES2020"],
     "outDir": "./dist",
     "rootDir": "./src",
@@ -11,27 +12,16 @@
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "declaration": false,
-    "declarationMap": false,
-    "sourceMap": false,
-    "removeComments": true,
+    "sourceMap": true,
+    "removeComments": false,
     "noImplicitAny": false,
     "noImplicitReturns": false,
-    "noImplicitThis": false,
     "noUnusedLocals": false,
-    "noUnusedParameters": false,
-    "exactOptionalPropertyTypes": false,
-    "noImplicitOverride": false,
-    "noPropertyAccessFromIndexSignature": false,
-    "noUncheckedIndexedAccess": false
+    "noUnusedParameters": false
   },
-  "include": [
-    "src/**/*",
-    "plugins/**/*"
+  "files": [
+    "src/http-server.ts",
+    "src/mcp-stdio.ts"
   ],
-  "exclude": [
-    "node_modules",
-    "dist",
-    "web/**/*",
-    "**/*.d.ts"
-  ]
+  "exclude": ["node_modules", "dist", "web", "**/*.d.ts"]
 }

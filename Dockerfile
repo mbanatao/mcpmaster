@@ -1,62 +1,38 @@
-# Multi-stage build for EdenOS MCP Bridge
-FROM node:18-alpine AS builder
+# Build the TypeScript runtime with development dependencies available.
+FROM node:20-alpine AS builder
 
-# Set working directory
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
+COPY package.json package-lock.json ./
+RUN npm ci
+
 COPY tsconfig.json ./
-
-# Install dependencies
-RUN npm ci --only=production && npm cache clean --force
-
-# Copy source code
 COPY src/ ./src/
-COPY plugins/ ./plugins/
-COPY web/ ./web/
-
-# Build the application
 RUN npm run build
 
-# Production stage
-FROM node:18-alpine AS production
+# Run only compiled JavaScript and production dependencies.
+FROM node:20-alpine AS production
 
-# Install dumb-init for proper signal handling
-RUN apk add --no-cache dumb-init
+RUN apk add --no-cache dumb-init \
+  && addgroup -g 1001 -S nodejs \
+  && adduser -S edenos -u 1001 -G nodejs
 
-# Create app user
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S edenos -u 1001
-
-# Set working directory
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
+ENV NODE_ENV=production
 
-# Install only production dependencies
-RUN npm ci --only=production && npm cache clean --force
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev && npm cache clean --force
 
-# Copy built application
 COPY --from=builder --chown=edenos:nodejs /app/dist ./dist
-COPY --from=builder --chown=edenos:nodejs /app/src ./src
-COPY --from=builder --chown=edenos:nodejs /app/plugins ./plugins
-COPY --from=builder --chown=edenos:nodejs /app/web ./web
+COPY --chown=edenos:nodejs web/ ./web/
 
-# Create logs directory
-RUN mkdir -p /app/logs && chown edenos:nodejs /app/logs
-
-# Switch to non-root user
 USER edenos
 
-# Expose port
 EXPOSE 3000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3000/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+  CMD node -e "require('http').get('http://127.0.0.1:3000/health', (res) => process.exit(res.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"
 
-# Start the application
 ENTRYPOINT ["dumb-init", "--"]
-CMD ["node", "src/server.js"]
+CMD ["node", "dist/http-server.js"]
