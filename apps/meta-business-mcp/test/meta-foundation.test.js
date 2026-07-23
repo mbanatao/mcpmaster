@@ -36,6 +36,7 @@ test('unknown tools are denied without producing a network-capable decision', ()
     allowedPageIds: ['synthetic-page'],
     arguments: {},
     killSwitchActive: false,
+    networkEnabled: false,
   });
 
   assert.deepEqual(result, {
@@ -58,6 +59,7 @@ test('draft tools remain non-networked and flag legal-risk language', () => {
       message: 'The statute of limitations is safe and you will win.',
     },
     killSwitchActive: true,
+    networkEnabled: false,
   });
 
   assert.equal(result.allowed, true);
@@ -75,12 +77,36 @@ test('write tools are denied until an exact approval is present', () => {
     arguments: { message: 'Our office is open Monday through Friday.' },
     idempotencyKey: 'meta-publish-0001',
     killSwitchActive: false,
+    networkEnabled: true,
   });
 
   assert.equal(result.allowed, false);
   assert.equal(result.networkMutationAllowed, false);
   assert.ok(result.reasons.includes('human_approval_required'));
   assert.ok(result.reasons.includes('approved_action_hash_mismatch'));
+});
+
+test('writes remain denied while Meta network mode is disabled', () => {
+  const context = {
+    staffId: 'staff-1',
+    requesterId: 'staff-1',
+    pageId: 'synthetic-page',
+    allowedPageIds: ['synthetic-page'],
+    arguments: { message: 'Our office is open Monday through Friday.' },
+    idempotencyKey: 'meta-publish-0001',
+    approvalDecision: 'approved',
+    killSwitchActive: false,
+    networkEnabled: false,
+  };
+
+  const planned = evaluateMetaInvocation('meta_post_publish', context);
+  const denied = evaluateMetaInvocation('meta_post_publish', {
+    ...context,
+    approvedActionHash: planned.actionHash,
+  });
+
+  assert.equal(denied.allowed, false);
+  assert.ok(denied.reasons.includes('meta_network_disabled'));
 });
 
 test('an exactly approved static-information write passes policy', () => {
@@ -92,6 +118,7 @@ test('an exactly approved static-information write passes policy', () => {
     arguments: { message: 'Our office is open Monday through Friday.' },
     idempotencyKey: 'meta-publish-0001',
     killSwitchActive: false,
+    networkEnabled: true,
   };
 
   const planned = evaluateMetaInvocation('meta_post_publish', context);
@@ -117,6 +144,7 @@ test('legal-risk writes require an additional lawyer or secretary review signal'
     idempotencyKey: 'meta-message-0001',
     approvalDecision: 'approved',
     killSwitchActive: false,
+    networkEnabled: true,
   };
 
   const planned = evaluateMetaInvocation('meta_message_send', context);
@@ -136,6 +164,39 @@ test('legal-risk writes require an additional lawyer or secretary review signal'
   });
 
   assert.equal(reviewed.allowed, true);
+});
+
+test('R3 deletion requires an approver different from the requester', () => {
+  const context = {
+    staffId: 'staff-1',
+    requesterId: 'staff-1',
+    pageId: 'synthetic-page',
+    allowedPageIds: ['synthetic-page'],
+    arguments: { resourceId: 'synthetic-post' },
+    idempotencyKey: 'meta-delete-0001',
+    approvalDecision: 'approved',
+    killSwitchActive: false,
+    networkEnabled: true,
+  };
+
+  const planned = evaluateMetaInvocation('meta_post_delete', context);
+  const selfApproved = evaluateMetaInvocation('meta_post_delete', {
+    ...context,
+    approverId: 'staff-1',
+    approvedActionHash: planned.actionHash,
+  });
+
+  assert.equal(selfApproved.allowed, false);
+  assert.ok(selfApproved.reasons.includes('independent_approver_required'));
+
+  const independentlyApproved = evaluateMetaInvocation('meta_post_delete', {
+    ...context,
+    approverId: 'staff-2',
+    approvedActionHash: planned.actionHash,
+  });
+
+  assert.equal(independentlyApproved.allowed, true);
+  assert.equal(independentlyApproved.requiresIndependentApproval, true);
 });
 
 test('configuration defaults to network disabled and kill switch active', () => {
