@@ -67,7 +67,20 @@ jobs:
         run: supabase db start
 
       - name: Run database tests
-        run: supabase test db
+        run: |
+          set +e
+          supabase test db > supabase-test.log 2>&1
+          status=$?
+          cat supabase-test.log
+          exit $status
+
+      - name: Upload database diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: database-test-diagnostics
+          path: supabase-test.log
+          if-no-files-found: ignore
 
       - name: Stop local Supabase services
         if: always()
