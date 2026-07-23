@@ -7,10 +7,11 @@ import { classifyToolRisk } from './runtime/tool-policy.js';
 
 const allowWrites = process.env.MCP_ALLOW_WRITES === 'true';
 
-const server = new Server(
-  { name: 'mcpmaster', version: '1.1.0-foundation' },
-  { capabilities: { tools: {} } },
-);
+const server = new Server({
+  name: 'mcpmaster',
+  version: '1.1.0-foundation',
+  capabilities: { tools: {} },
+});
 
 function availableTools(): Tool[] {
   return Object.entries(toolRegistry)
@@ -18,11 +19,7 @@ function availableTools(): Tool[] {
     .map(([name, metadata]) => ({
       name,
       description: `${metadata.description} [risk: ${classifyToolRisk(name)}]`,
-      inputSchema: {
-        type: 'object',
-        properties: {},
-        additionalProperties: true,
-      },
+      inputSchema: metadata.inputSchema as Tool['inputSchema'],
     }));
 }
 
@@ -30,7 +27,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools: available
 
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
   const { name, arguments: args } = request.params;
-  const entry = toolRegistry[name as keyof typeof toolRegistry];
+  const entry = toolRegistry[name];
 
   if (!entry) {
     return {
