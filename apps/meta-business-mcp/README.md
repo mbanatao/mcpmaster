@@ -8,36 +8,37 @@ The governing operating rule is:
 
 ## Current milestone
 
-This branch contains only:
+This branch contains:
 
 - the typed 17-tool catalog;
 - deterministic Page allowlisting;
 - exact action hashing for approval binding;
-- idempotency and kill-switch policy checks;
+- idempotency, network-mode, independent-approval, and kill-switch policy checks;
 - audit redaction primitives;
 - law-office legal-risk classification;
 - fail-safe configuration parsing;
-- synthetic unit tests.
+- a typed Meta provider port;
+- a non-networked synthetic provider implementing all eight read tools;
+- tenant-scoped in-memory draft storage;
+- executable post, comment-reply, message-reply, and weekly-plan drafts;
+- synthetic unit and security-negative tests.
 
-It does **not** contain a Meta API client, OAuth callback, remote MCP server, webhook receiver, token resolver, network request, deployment configuration, or production credential.
+It does **not** contain an official Meta API client, OAuth callback, remote MCP server, webhook receiver, token resolver, network request, deployment configuration, or production credential.
 
-## Planned application structure
+## Current application structure
 
 ```text
 apps/meta-business-mcp/
   src/
-    mcp/
+    drafts/
     meta/
-    tools/
-    webhooks/
-    approvals/
-    audit/
     security/
+    tools/
   docs/
   test/
 ```
 
-Only the `tools`, `security`, and configuration foundations exist in this milestone.
+The future `mcp`, `webhooks`, `approvals`, and persistent `audit` adapters are not yet implemented.
 
 ## Tool groups
 
@@ -52,6 +53,8 @@ Only the `tools`, `security`, and configuration foundations exist in this milest
 - `meta_page_get_insights`
 - `meta_webhook_health`
 
+All eight read tools currently execute only against the synthetic provider. The read/draft executor rejects any provider marked network-capable.
+
 ### Draft only
 
 - `meta_post_create_draft`
@@ -59,7 +62,7 @@ Only the `tools`, `security`, and configuration foundations exist in this milest
 - `meta_message_create_reply_draft`
 - `meta_content_create_weekly_plan`
 
-Draft tools never publish or send content.
+Draft tools store internal draft records and never publish, schedule, reply, or send content. Legal-risk drafts remain available for staff review but are visibly flagged.
 
 ### External writes
 
@@ -69,7 +72,9 @@ Draft tools never publish or send content.
 - `meta_message_send`
 - `meta_post_delete`
 
-Every external write must have authenticated staff identity, an exact Page allowlist match, an approved action hash, an idempotency key, audit evidence, and the emergency kill switch disabled. Post deletion is classified R3 and requires independent approval.
+Every external write must eventually have authenticated staff identity, an exact Page allowlist match, an approved action hash, an idempotency key, audit evidence, explicit network enablement, and the emergency kill switch disabled. Post deletion is classified R3 and requires independent approval.
+
+The current executor throws `MetaWriteExecutionDisabledError` for every write tool. There is no write provider method or network mutation path in this milestone.
 
 ## Law-office boundary
 
