@@ -9,7 +9,13 @@ MCPMaster now has two explicit entry points:
 - `src/http-server.ts` — the container-hosted HTTP control plane.
 - `src/mcp-stdio.ts` — the local MCP stdio process.
 
-The previous `src/server.ts` remains temporarily available through `npm run start:legacy`, but it is no longer the production default.
+The previous `src/server.ts` remains in the repository only as historical prototype code. It is not compiled, launched, or supported by the production runtime.
+
+## Supported connector scope
+
+The first production runtime is deliberately GitHub-first. Only tools from `src/tools/github.ts` are compiled and advertised.
+
+Other adapter files remain in the repository as prototypes. Each adapter must receive credential validation, risk classification, contract tests, and approval behavior before it can join the production catalog.
 
 ## HTTP security model
 
@@ -92,9 +98,9 @@ This setting is intended only for a trusted local environment. The HTTP control 
 
 ## Service credentials
 
-The runtime no longer substitutes `demo-key` values. A tool fails with `SERVICE_NOT_CONFIGURED` when its required service credentials are missing.
+The runtime no longer substitutes `demo-key` values. A GitHub tool fails with `SERVICE_NOT_CONFIGURED` when `GITHUB_TOKEN` is missing.
 
-See `env.example` for the complete environment contract.
+See `env.example` for the environment contract and future adapter placeholders.
 
 ## Container deployment
 
@@ -125,6 +131,6 @@ Arguments, credentials, and provider results are deliberately excluded. Persiste
 
 - Approval tokens are environment-level, not user-specific.
 - Audit events are in memory and reset on restart.
-- The legacy connector implementations still need individual hardening and contract tests.
-- Tool input schemas are not yet generated from a single canonical registry.
+- Non-GitHub connector implementations still need individual hardening and contract tests.
+- The production catalog is single-connector rather than tenant-configurable.
 - Multi-tenant authentication and durable workflow execution are not part of this foundation PR.
