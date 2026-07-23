@@ -19,6 +19,9 @@
     "noUnusedLocals": false,
     "noUnusedParameters": false
   },
-  "include": ["src/**/*.ts"],
+  "files": [
+    "src/http-server.ts",
+    "src/mcp-stdio.ts"
+  ],
   "exclude": ["node_modules", "dist", "web", "**/*.d.ts"]
 }
