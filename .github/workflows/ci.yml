@@ -28,7 +28,20 @@ jobs:
         run: npm ci
 
       - name: Type-check
-        run: npm run check
+        run: |
+          set +e
+          npm run check > tsc.log 2>&1
+          status=$?
+          cat tsc.log
+          exit $status
+
+      - name: Upload compiler diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: typecheck-diagnostics
+          path: tsc.log
+          if-no-files-found: ignore
 
       - name: Run tests
         run: npm test
