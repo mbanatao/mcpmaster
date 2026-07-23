@@ -1,14 +1,17 @@
 {
   "name": "edenos-mcp-bridge",
   "version": "1.0.0",
-  "description": "EdenOS MCP Bridge - Ultimate MCP Server with 15 Service Integrations",
-  "main": "src/server.ts",
+  "description": "MCPMaster approval-gated workflow and connector runtime",
+  "main": "dist/http-server.js",
   "scripts": {
-    "build": "echo 'Build completed - using ts-node for Vercel'",
-    "start": "ts-node src/server.ts",
-    "dev": "ts-node src/server.ts",
-    "vercel-build": "echo 'Vercel build completed'",
-    "vercel-dev": "ts-node src/server.ts",
+    "build": "tsc -p tsconfig.json",
+    "check": "tsc -p tsconfig.json --noEmit",
+    "test": "npm run build && node --test test/*.test.js",
+    "start": "node dist/http-server.js",
+    "dev": "ts-node src/http-server.ts",
+    "start:mcp": "node dist/mcp-stdio.js",
+    "dev:mcp": "ts-node src/mcp-stdio.ts",
+    "start:legacy": "ts-node src/server.ts",
     "aws-deploy": "aws/deploy.sh",
     "aws-deploy-win": "powershell -ExecutionPolicy Bypass -File aws/deploy.ps1",
     "aws-deploy-complete": "aws/deploy-complete.sh",
@@ -21,23 +24,12 @@
   "keywords": [
     "mcp",
     "model-context-protocol",
-    "bridge",
-    "api",
-    "integration",
-    "notion",
-    "linear",
+    "workflow",
+    "approval-gates",
+    "audit",
     "github",
-    "firebase",
-    "gcp",
-    "figma",
-    "zapier",
-    "bnd",
-    "saviynt",
-    "anthropic",
-    "neon",
-    "deepmind",
-    "openai",
-    "box"
+    "notion",
+    "linear"
   ],
   "author": "EdenOS Team",
   "license": "MIT",
@@ -64,6 +56,6 @@
     "@vercel/node": "^3.0.0"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=20.0.0"
   }
 }
