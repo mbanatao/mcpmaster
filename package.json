@@ -19,7 +19,7 @@
     "aws-deploy-complete": "aws/deploy-complete.sh",
     "aws-deploy-complete-win": "powershell -ExecutionPolicy Bypass -File aws/deploy-complete.ps1",
     "aws-setup": "aws/setup-aws.sh",
-    "aws-setup-win": "powershell -ExecutionPolicy Bypass -File aws/setup.ps1",
+    "aws-setup-win": "powershell -ExecutionPolicy Bypass -File aws/setup-aws.ps1",
     "docker-build": "docker build -t edenos-mcp-bridge .",
     "docker-run": "docker run -p 3000:3000 --env-file .env edenos-mcp-bridge"
   },
