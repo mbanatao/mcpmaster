@@ -133,6 +133,11 @@ export class MetaReadDraftExecutor {
       throw new MetaPolicyDeniedError(toolName, policy.reasons);
     }
 
+    if (policy.tool.mode === 'write') {
+      throw new MetaWriteExecutionDisabledError(toolName);
+    }
+    const executionMode = policy.tool.mode;
+
     const pageId = requiredString(argumentsValue, 'pageId');
     let data: unknown;
 
@@ -210,7 +215,7 @@ export class MetaReadDraftExecutor {
 
     return {
       toolName,
-      mode: policy.tool.mode,
+      mode: executionMode,
       data,
       policy: {
         actionHash: policy.actionHash,
