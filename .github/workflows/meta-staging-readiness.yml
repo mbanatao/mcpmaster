@@ -19,11 +19,11 @@ env:
   META_NETWORK_ENABLED: "true"
   META_KILL_SWITCH: "false"
   META_STAGING_ACCESS_TOKEN_SECRET_REF: env://META_STAGING_STAFF_TOKEN
-  META_TOKEN_SECRET_REF: env://META_PAGE_ACCESS_TOKEN
-  META_WEBHOOK_SECRET_REF: env://META_APP_SECRET_VALUE
-  META_WEBHOOK_VERIFY_TOKEN_SECRET_REF: env://META_WEBHOOK_VERIFY_TOKEN_VALUE
+  META_TOKEN_SECRET_REF: vault://meta/staging/page-token
+  META_WEBHOOK_SECRET_REF: vault://meta/staging/app-secret
+  META_WEBHOOK_VERIFY_TOKEN_SECRET_REF: vault://meta/staging/webhook-verify-token
   META_ENCRYPTION_KEY_REF: kms://staging-meta-key
-  META_SUPABASE_SERVICE_KEY_SECRET_REF: env://META_SUPABASE_SERVER_KEY
+  META_SUPABASE_SERVICE_KEY_SECRET_REF: vault://supabase/staging/server-key
 
 jobs:
   validate-read-only-staging:
@@ -46,11 +46,6 @@ jobs:
       META_GRAPH_API_VERSION: ${{ vars.META_GRAPH_API_VERSION }}
       META_REMOTE_MCP_ORGANIZATION_ID: ${{ vars.META_REMOTE_MCP_ORGANIZATION_ID }}
       META_REMOTE_MCP_INSTALLATION_ID: ${{ vars.META_REMOTE_MCP_INSTALLATION_ID }}
-      META_STAGING_STAFF_TOKEN: ${{ secrets.META_STAGING_STAFF_TOKEN }}
-      META_PAGE_ACCESS_TOKEN: ${{ secrets.META_PAGE_ACCESS_TOKEN }}
-      META_APP_SECRET_VALUE: ${{ secrets.META_APP_SECRET_VALUE }}
-      META_WEBHOOK_VERIFY_TOKEN_VALUE: ${{ secrets.META_WEBHOOK_VERIFY_TOKEN_VALUE }}
-      META_SUPABASE_SERVER_KEY: ${{ secrets.META_SUPABASE_SERVER_KEY }}
 
     steps:
       - name: Check out repository
@@ -89,4 +84,6 @@ jobs:
         run: supabase db push --dry-run --linked
 
       - name: Run read-only remote MCP validation
+        env:
+          META_STAGING_STAFF_TOKEN: ${{ secrets.META_STAGING_STAFF_TOKEN }}
         run: npm run meta:staging:smoke
