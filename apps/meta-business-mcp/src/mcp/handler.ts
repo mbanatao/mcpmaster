@@ -1,5 +1,8 @@
 import type { AuthenticatedStaffIdentity } from '../auth/supabase-bearer';
-import type { ActiveOrganizationMembership } from '../auth/membership';
+import {
+  roleCanCreateDraft,
+  type ActiveOrganizationMembership,
+} from '../auth/membership';
 import type { MetaDraftStore } from '../drafts/store';
 import { getMetaToolDefinition } from '../tools/catalog';
 import { PersistentMetaDraftExecutor } from '../tools/draft-executor';
@@ -196,6 +199,9 @@ export class MetaRemoteMcpHandler {
       if (catalogTool?.mode === 'read') {
         data = (await this.options.readExecutor.execute(name, argumentsValue, context)).data;
       } else if (catalogTool?.mode === 'draft') {
+        if (!roleCanCreateDraft(actor.membership.role)) {
+          throw new MetaPolicyDeniedError(name, ['draft_role_required']);
+        }
         const drafts = this.options.draftStoreFactory(actor.identity.accessToken);
         data = (await new PersistentMetaDraftExecutor(drafts).execute(
           name,
