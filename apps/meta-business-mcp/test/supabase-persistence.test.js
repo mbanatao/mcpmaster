@@ -111,7 +111,12 @@ test('draft persistence uses caller-scoped RLS credentials and maps the returned
 test('webhook persistence uses service-only RPCs and stores no payload bodies', async () => {
   const calls = [];
   const fetchFn = async (url, init) => {
-    calls.push({ url: String(url), headers: new Headers(init.headers), body: JSON.parse(init.body) });
+    calls.push({
+      url: String(url),
+      method: init.method,
+      headers: new Headers(init.headers),
+      body: init.body === undefined ? undefined : JSON.parse(init.body),
+    });
     if (String(url).includes('claim_meta_webhook_delivery')) {
       return jsonResponse(true);
     }
@@ -147,6 +152,8 @@ test('webhook persistence uses service-only RPCs and stores no payload bodies', 
   assert.equal(calls[0].body.p_payload_hash, hash);
   assert.equal(Object.values(calls[0].body).some((value) => String(value).includes('message body')), false);
   assert.equal(calls[1].body.p_accepted, true);
+  assert.equal(calls[2].method, undefined);
+  assert.equal(calls[2].body, undefined);
 });
 
 test('environment secret resolver allows only explicit server references', async () => {
