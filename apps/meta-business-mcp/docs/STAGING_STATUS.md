@@ -32,7 +32,7 @@ The current deployment remains a fail-closed bootstrap rather than the full Meta
 - no Meta credentials
 - no webhook endpoint configuration
 
-The connected Vercel integration can deploy and inspect projects, but it does not expose encrypted environment-variable writes. Do not place secrets in source, deployment payloads, logs, or documentation.
+The connected Vercel integration can deploy and inspect projects, but it does not expose encrypted environment-variable writes. The current execution workspace also has no authenticated Vercel CLI or browser-automation binary. Do not place secrets in source, deployment payloads, logs, or documentation.
 
 ## Supabase staging resource
 
@@ -68,6 +68,25 @@ The installed schema includes:
 
 RLS is enabled on every application table. `credential_refs`, `webhook_events`, and `meta_webhook_health` intentionally have no authenticated-user policies and remain server-only.
 
+### Auth and tenant readiness
+
+A real staging Supabase Auth identity has been created through the supported email/password signup flow and is email-confirmed.
+
+- Auth user ID: `76a3bf0a-5bfa-4ce2-b92a-3646824e5754`
+- profile display name: `MCPMaster Staging Owner`
+- profile timezone: `Asia/Manila`
+- confirmed sign-in recorded by Supabase Auth
+
+The staging tenant exists and is active.
+
+- organization ID: `2270b266-59da-4c39-bfd9-9f8d08352af0`
+- organization slug: `mcpmaster-staging`
+- membership role: `owner`
+- membership status: `active`
+- exactly one `organization.created` append-only audit event exists
+
+Temporary database HTTP transport used for the supported Auth call was removed after use. Its bookkeeping records were also removed, leaving only the two canonical repository migrations in remote history.
+
 ### Advisor review
 
 Supabase security and performance advisors were run after migration.
@@ -78,15 +97,14 @@ Performance results are informational on an empty staging database. Missing fore
 
 ## Remaining controlled steps
 
-1. Create a real staging Supabase Auth user through a supported Auth flow.
-2. Create the staging organization through `create_organization` so the owner membership and audit event are produced normally.
-3. Create the Meta connector installation after an exact Facebook Page ID is approved.
-4. Add reviewed encrypted Vercel environment variables and server-side secret references.
-5. Replace the fail-closed bootstrap with the repository Meta MCP runtime.
-6. Create or connect a dedicated Meta developer staging application through an authenticated human owner.
-7. Store a short-lived Page token only in encrypted secret storage.
-8. Run the manual `Meta Staging Readiness` workflow with confirmation `READ_ONLY`.
-9. Verify service health, MCP initialization, exact twelve-tool discovery, and one `meta_page_get` call.
+1. Approve an exact Facebook Page ID for staging.
+2. Create the Meta connector installation for that Page only.
+3. Add reviewed encrypted Vercel environment variables and server-side secret references through an authenticated Vercel dashboard or CLI session.
+4. Replace the fail-closed bootstrap with the repository Meta MCP runtime.
+5. Create or connect a dedicated Meta developer staging application through an authenticated human owner.
+6. Store a short-lived Page token only in encrypted secret storage.
+7. Run the manual `Meta Staging Readiness` workflow with confirmation `READ_ONLY`.
+8. Verify service health, MCP initialization, exact twelve-tool discovery, and one `meta_page_get` call.
 
 ## Hold points
 
@@ -94,8 +112,8 @@ Do not:
 
 - restore or delete RealMatch without explicit authorization;
 - apply MCPMaster migrations to Battle or RealMatch;
-- fabricate an Auth identity by inserting directly into `auth.users`;
+- fabricate or directly mutate Auth confirmation state;
 - create or connect a Meta application without an authenticated human owner;
-- commit or log provider, Supabase server, or staff access tokens;
+- commit or log provider, Supabase server, staff access, or refresh tokens;
 - expose webhooks before signature verification and ingress are reviewed;
 - enable publishing, scheduling, replies, messages, or deletion.
