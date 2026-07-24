@@ -1,0 +1,89 @@
+name: Meta Staging Readiness
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: Type READ_ONLY to confirm that this run must not publish, reply, send, schedule, or delete
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+env:
+  MCPMASTER_ENVIRONMENT: staging
+  META_STAGING_READ_ONLY_VALIDATION_ENABLED: "true"
+  META_EXTERNAL_WRITES_ENABLED: "false"
+  META_REMOTE_MCP_ENABLED: "true"
+  META_NETWORK_ENABLED: "true"
+  META_KILL_SWITCH: "false"
+  META_STAGING_ACCESS_TOKEN_SECRET_REF: env://META_STAGING_STAFF_TOKEN
+  META_TOKEN_SECRET_REF: vault://meta/staging/page-token
+  META_WEBHOOK_SECRET_REF: vault://meta/staging/app-secret
+  META_WEBHOOK_VERIFY_TOKEN_SECRET_REF: vault://meta/staging/webhook-verify-token
+  META_ENCRYPTION_KEY_REF: kms://staging-meta-key
+  META_SUPABASE_SERVICE_KEY_SECRET_REF: vault://supabase/staging/server-key
+
+jobs:
+  validate-read-only-staging:
+    if: ${{ inputs.confirmation == 'READ_ONLY' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: meta-staging
+
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      SUPABASE_PROJECT_ID: ${{ vars.SUPABASE_PROJECT_ID }}
+      SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+      SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+      META_STAGING_BASE_URL: ${{ vars.META_STAGING_BASE_URL }}
+      META_STAGING_ORIGIN: ${{ vars.META_STAGING_ORIGIN }}
+      META_STAGING_EXPECTED_PAGE_ID: ${{ vars.META_STAGING_EXPECTED_PAGE_ID }}
+      META_ALLOWED_PAGE_IDS: ${{ vars.META_STAGING_EXPECTED_PAGE_ID }}
+      META_APP_ID: ${{ vars.META_APP_ID }}
+      META_GRAPH_API_VERSION: ${{ vars.META_GRAPH_API_VERSION }}
+      META_REMOTE_MCP_ORGANIZATION_ID: ${{ vars.META_REMOTE_MCP_ORGANIZATION_ID }}
+      META_REMOTE_MCP_INSTALLATION_ID: ${{ vars.META_REMOTE_MCP_INSTALLATION_ID }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Compile and run security tests
+        run: |
+          npm run check
+          npm test
+
+      - name: Validate redacted staging configuration
+        run: npm run meta:staging:validate
+
+      - name: Set up Supabase CLI
+        uses: supabase/setup-cli@v2
+        with:
+          version: 2.84.2
+          github-token: ${{ github.token }}
+
+      - name: Link staging database
+        run: supabase link --project-ref "$SUPABASE_PROJECT_ID"
+
+      - name: Verify migration history
+        run: supabase migration list --linked
+
+      - name: Preview pending migrations without applying them
+        run: supabase db push --dry-run --linked
+
+      - name: Run read-only remote MCP validation
+        env:
+          META_STAGING_STAFF_TOKEN: ${{ secrets.META_STAGING_STAFF_TOKEN }}
+        run: npm run meta:staging:smoke
