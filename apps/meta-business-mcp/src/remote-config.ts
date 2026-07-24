@@ -95,6 +95,26 @@ function supabaseUrl(value: string): string {
   return url.origin;
 }
 
+function platformManaged(environment: NodeJS.ProcessEnv): boolean {
+  return optional(environment.VERCEL) === '1' || Boolean(optional(environment.VERCEL_ENV));
+}
+
+function runtimeHost(environment: NodeJS.ProcessEnv): string {
+  return optional(environment.META_REMOTE_MCP_HOST)
+    ?? (platformManaged(environment) ? '0.0.0.0' : '127.0.0.1');
+}
+
+function runtimePort(environment: NodeJS.ProcessEnv): number {
+  const platformPort = optional(environment.PORT);
+  return parseInteger(
+    platformPort ?? environment.META_REMOTE_MCP_PORT,
+    3200,
+    1,
+    65535,
+    platformPort ? 'PORT' : 'META_REMOTE_MCP_PORT',
+  );
+}
+
 const FORBIDDEN_RAW_SERVICE_KEYS = [
   'SUPABASE_SERVICE_ROLE_KEY',
   'SUPABASE_SECRET_KEY',
@@ -118,8 +138,8 @@ export function loadMetaRemoteMcpConfig(
   return {
     ...live,
     remoteMcpEnabled: true,
-    host: optional(environment.META_REMOTE_MCP_HOST) ?? '127.0.0.1',
-    port: parseInteger(environment.META_REMOTE_MCP_PORT, 3200, 1, 65535, 'META_REMOTE_MCP_PORT'),
+    host: runtimeHost(environment),
+    port: runtimePort(environment),
     allowedOrigins: parseOrigins(environment.META_REMOTE_MCP_ALLOWED_ORIGINS),
     requireHttps: parseBoolean(environment.META_REMOTE_MCP_REQUIRE_HTTPS, true),
     organizationId: uuid(
