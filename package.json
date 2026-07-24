@@ -17,6 +17,7 @@
     "start:meta-remote": "node apps/meta-business-mcp/dist/remote-server.js",
     "dev:meta-remote": "ts-node apps/meta-business-mcp/src/remote-server.ts",
     "meta:staging:validate": "npm run build:meta && node apps/meta-business-mcp/dist/staging-cli.js validate",
+    "meta:staging:prove-access": "npm run build:meta && node apps/meta-business-mcp/dist/staging-cli.js prove-access",
     "meta:staging:smoke": "npm run build:meta && node apps/meta-business-mcp/dist/staging-cli.js smoke",
     "aws-deploy": "aws/deploy.sh",
     "aws-deploy-win": "powershell -ExecutionPolicy Bypass -File aws/deploy.ps1",
