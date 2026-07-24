@@ -59,5 +59,8 @@ jobs:
           path: node-test.log
           if-no-files-found: ignore
 
-      - name: Build container
+      - name: Build bridge container
         run: docker build -t mcpmaster-ci .
+
+      - name: Build Meta MCP container
+        run: docker build -f apps/meta-business-mcp/Dockerfile -t mcpmaster-meta-ci .
