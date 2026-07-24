@@ -25,6 +25,7 @@ export interface MetaRemoteMcpHttpOptions {
   membershipResolver: OrganizationMembershipResolver;
   organizationId: string;
   allowedOrigins: readonly string[];
+  requireHttps: boolean;
   requestBodyLimitBytes: number;
   requestsPerMinute: number;
   webhookProcessor?: MetaWebhookProcessor;
@@ -112,6 +113,7 @@ export function createMetaRemoteMcpApp(options: MetaRemoteMcpHttpOptions): expre
   );
 
   app.disable('x-powered-by');
+  app.set('trust proxy', 1);
   app.use(helmet({ contentSecurityPolicy: false }));
 
   app.get('/health', (_request, response) => {
@@ -121,6 +123,15 @@ export function createMetaRemoteMcpApp(options: MetaRemoteMcpHttpOptions): expre
       service: 'mcpmaster-meta-business-mcp',
       externalWritesEnabled: false,
     });
+  });
+
+  app.use((request, response, next) => {
+    if (options.requireHttps && !request.secure) {
+      setSecureResponseHeaders(response);
+      response.status(426).json({ status: 'https_required' });
+      return;
+    }
+    next();
   });
 
   if (options.webhookVerifier) {
