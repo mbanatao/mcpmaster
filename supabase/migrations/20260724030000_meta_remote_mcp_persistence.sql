@@ -34,6 +34,12 @@ create table public.meta_webhook_health (
 alter table public.webhook_events
   add column expires_at timestamptz;
 
+alter table public.webhook_events
+  drop constraint if exists webhook_events_provider_delivery_id_key;
+alter table public.webhook_events
+  add constraint webhook_events_org_provider_delivery_unique
+  unique (organization_id, provider, delivery_id);
+
 create index webhook_events_expires_at_idx
   on public.webhook_events(expires_at)
   where expires_at is not null;
@@ -127,7 +133,7 @@ begin
     'received'::public.webhook_status,
     p_expires_at
   )
-  on conflict (provider, delivery_id) do nothing;
+  on conflict (organization_id, provider, delivery_id) do nothing;
 
   get diagnostics inserted_rows = row_count;
   return inserted_rows = 1;
