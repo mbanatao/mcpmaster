@@ -116,7 +116,7 @@ test('webhook persistence uses service-only RPCs and stores no payload bodies', 
       return jsonResponse(true);
     }
     if (String(url).includes('record_meta_webhook_health')) {
-      return new Response('', { status: 204 });
+      return new Response(null, { status: 204 });
     }
     return jsonResponse([{
       page_id: 'test-page',
