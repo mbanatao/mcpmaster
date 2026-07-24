@@ -89,6 +89,7 @@ export async function createMetaRemoteRuntime(
     membershipResolver,
     organizationId: config.organizationId,
     allowedOrigins: config.allowedOrigins,
+    requireHttps: config.requireHttps,
     requestBodyLimitBytes: config.requestBodyLimitBytes,
     requestsPerMinute: config.requestsPerMinute,
     webhookProcessor: official.webhookProcessor,
