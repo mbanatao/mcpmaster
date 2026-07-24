@@ -17,73 +17,85 @@ The deployable Meta Business MCP implementation is present on `main`.
 
 ## Vercel staging resource
 
-A dedicated Vercel project has been created.
+A dedicated Vercel project exists.
 
 - project name: `mcpmaster-meta-staging`
 - project ID: `prj_aG8ekiHMsCEYn6dbIK5Mk4HeNuZ8`
 - protected preview deployment ID: `dpl_4Bu6LKGRqFKYSw7Ww9fPjLSEZpKp`
 - preview hostname: `mcpmaster-meta-staging-ey8ick0ph-mbanatao.vercel.app`
 
-The current deployment is a fail-closed bootstrap, not the full Meta MCP runtime. It contains explicit Vercel Functions for readiness and MCP-blocked responses because no isolated Supabase resource or provider credentials are available yet.
-
-The bootstrap state is intentionally:
+The current deployment remains a fail-closed bootstrap rather than the full Meta MCP runtime. It is protected by Vercel Authentication and intentionally reports:
 
 - `externalWritesEnabled: false`
 - `providerNetworkEnabled: false`
 - `mcpEnabled: false`
-- no Supabase credentials
 - no Meta credentials
 - no webhook endpoint configuration
 
-The preview is protected by Vercel Authentication.
+The connected Vercel integration can deploy and inspect projects, but it does not expose encrypted environment-variable writes. Do not place secrets in source, deployment payloads, logs, or documentation.
 
-## Supabase capacity blocker
+## Supabase staging resource
 
-The connected Supabase organization currently contains two active Free-plan projects:
+The Free-plan capacity blocker has been resolved by explicit authorization to pause RealMatch.
 
-- `Battle` — `ydyzokdndnhwjpibrsvu`
-- `RealMatch` — `rkthpfdzzisudaxxqvgn`
+### Project states
 
-The following safe provisioning attempts were made:
+- `Battle` — `ydyzokdndnhwjpibrsvu` — unchanged
+- `RealMatch` — `rkthpfdzzisudaxxqvgn` — paused / `INACTIVE`
+- `MCPMaster Meta Staging` — `jcyqixttuebxqqfkjonq` — `ACTIVE_HEALTHY`
 
-1. Create an isolated `mcpmaster-meta-staging` branch from `Battle`.
-   - rejected because database branching requires the Pro plan or above.
-2. Create a separate `MCPMaster Meta Staging` project in `ap-southeast-2`.
-   - quoted cost: `$0/month`.
-   - rejected because the organization has reached the two-active-Free-project limit.
+The staging project is isolated from Battle and RealMatch.
 
-No existing Supabase project was paused, deleted, migrated, or repurposed.
+- region: `ap-southeast-2`
+- API origin: `https://jcyqixttuebxqqfkjonq.supabase.co`
+- quoted recurring project cost at creation: `$0/month`
 
-## Decision required before database provisioning
+### Applied repository migrations
 
-Choose one of these paths:
+The remote migration history matches the repository versions:
 
-1. Upgrade the Supabase organization to Pro, then create an isolated branch from `Battle`.
-2. Intentionally pause or delete a disposable existing Supabase project, then create a separate staging project.
-3. Explicitly authorize a reviewed isolated-schema strategy inside an existing project. This is not recommended and has not been implemented.
+- `20260724010000` — `control_plane_foundation`
+- `20260724030000` — `meta_remote_mcp_persistence`
 
-Do not choose or execute one of these paths implicitly.
+The installed schema includes:
 
-## Next actions after capacity is available
+- profiles, organizations, memberships, and connector installations
+- credential references
+- workflow runs, steps, approvals, and append-only audit events
+- webhook event replay state
+- Meta drafts and webhook health
+- exact approval and webhook RPCs
 
-1. Create the isolated Supabase staging resource in `ap-southeast-2`.
-2. Apply all repository migrations.
-3. Run Supabase security and performance advisors.
-4. Seed a dedicated staging organization, active staff membership, and Meta connector installation.
-5. Store only encrypted Vercel staging environment variables and server-side secret references.
-6. Replace the fail-closed Vercel bootstrap with the repository `Dockerfile.vercel` deployment.
-7. Create or connect a dedicated Meta developer staging application.
-8. Allowlist exactly one approved Facebook Page ID.
-9. Run the manual `Meta Staging Readiness` workflow with confirmation `READ_ONLY`.
-10. Verify service health, MCP initialization, exact twelve-tool discovery, and one `meta_page_get` call.
+RLS is enabled on every application table. `credential_refs`, `webhook_events`, and `meta_webhook_health` intentionally have no authenticated-user policies and remain server-only.
+
+### Advisor review
+
+Supabase security and performance advisors were run after migration.
+
+Security results contain no critical finding. Informational notices for server-only RLS tables are intentional. Warnings for `create_organization` and `decide_approval` reflect reviewed `SECURITY DEFINER` RPCs that perform explicit authentication and organization-role checks.
+
+Performance results are informational on an empty staging database. Missing foreign-key indexes should be evaluated through a repository migration after workload evidence; do not add staging-only indexes that create schema drift. Unused-index notices are expected before traffic exists.
+
+## Remaining controlled steps
+
+1. Create a real staging Supabase Auth user through a supported Auth flow.
+2. Create the staging organization through `create_organization` so the owner membership and audit event are produced normally.
+3. Create the Meta connector installation after an exact Facebook Page ID is approved.
+4. Add reviewed encrypted Vercel environment variables and server-side secret references.
+5. Replace the fail-closed bootstrap with the repository Meta MCP runtime.
+6. Create or connect a dedicated Meta developer staging application through an authenticated human owner.
+7. Store a short-lived Page token only in encrypted secret storage.
+8. Run the manual `Meta Staging Readiness` workflow with confirmation `READ_ONLY`.
+9. Verify service health, MCP initialization, exact twelve-tool discovery, and one `meta_page_get` call.
 
 ## Hold points
 
 Do not:
 
-- pause or delete `Battle` or `RealMatch` without explicit authorization;
-- apply MCPMaster migrations to either existing project;
+- restore or delete RealMatch without explicit authorization;
+- apply MCPMaster migrations to Battle or RealMatch;
+- fabricate an Auth identity by inserting directly into `auth.users`;
 - create or connect a Meta application without an authenticated human owner;
-- add real provider credentials before the isolated database and HTTPS runtime are reviewed;
-- expose webhooks;
+- commit or log provider, Supabase server, or staff access tokens;
+- expose webhooks before signature verification and ingress are reviewed;
 - enable publishing, scheduling, replies, messages, or deletion.
