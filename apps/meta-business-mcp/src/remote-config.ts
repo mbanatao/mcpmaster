@@ -5,6 +5,7 @@ export interface MetaRemoteMcpConfig extends MetaLiveConfig {
   host: string;
   port: number;
   allowedOrigins: string[];
+  requireHttps: boolean;
   organizationId: string;
   installationId: string;
   supabaseUrl: string;
@@ -120,6 +121,7 @@ export function loadMetaRemoteMcpConfig(
     host: optional(environment.META_REMOTE_MCP_HOST) ?? '127.0.0.1',
     port: parseInteger(environment.META_REMOTE_MCP_PORT, 3200, 1, 65535, 'META_REMOTE_MCP_PORT'),
     allowedOrigins: parseOrigins(environment.META_REMOTE_MCP_ALLOWED_ORIGINS),
+    requireHttps: parseBoolean(environment.META_REMOTE_MCP_REQUIRE_HTTPS, true),
     organizationId: uuid(
       required(environment, 'META_REMOTE_MCP_ORGANIZATION_ID'),
       'META_REMOTE_MCP_ORGANIZATION_ID',
