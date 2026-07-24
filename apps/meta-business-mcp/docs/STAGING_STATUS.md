@@ -70,22 +70,43 @@ RLS is enabled on every application table. `credential_refs`, `webhook_events`, 
 
 ### Auth and tenant readiness
 
-A real staging Supabase Auth identity has been created through the supported email/password signup flow and is email-confirmed.
+A real staging Supabase Auth identity has been created through the supported signup flow, email-confirmed, and successfully signed in.
 
-- Auth user ID: `76a3bf0a-5bfa-4ce2-b92a-3646824e5754`
 - profile display name: `MCPMaster Staging Owner`
 - profile timezone: `Asia/Manila`
-- confirmed sign-in recorded by Supabase Auth
-
-The staging tenant exists and is active.
-
-- organization ID: `2270b266-59da-4c39-bfd9-9f8d08352af0`
 - organization slug: `mcpmaster-staging`
 - membership role: `owner`
 - membership status: `active`
 - exactly one `organization.created` append-only audit event exists
 
-Temporary database HTTP transport used for the supported Auth call was removed after use. Its bookkeeping records were also removed, leaving only the two canonical repository migrations in remote history.
+Temporary database HTTP transport used for the supported Auth calls was removed after use. Its bookkeeping records were also removed, leaving only the two canonical repository migrations in remote history.
+
+### Pending Meta connector
+
+A pending connector installation exists for exactly one allowlisted Page.
+
+- installation ID: `01c5d527-031b-4d58-9b83-0cca87e9e77d`
+- Facebook Page ID: `1223714984161061`
+- candidate Meta App ID: `1223350063226282`
+- status: `pending`
+- granted scopes: none
+- credential references: none
+- webhook health rows: none
+- provider networking: disabled
+- external writes: disabled
+- app ownership verification: pending human review
+- exactly one `connector.meta.staging_configured` append-only audit event exists
+
+### RLS verification
+
+The confirmed owner context was exercised against the remote database.
+
+- exactly one staging organization was visible
+- exactly one pending Meta connector was visible
+- the append-only audit events were visible to the owner
+- `credential_refs` was not selectable by the authenticated role
+- `webhook_events` was not selectable by the authenticated role
+- `meta_webhook_health` was not selectable by the authenticated role
 
 ### Advisor review
 
@@ -97,14 +118,13 @@ Performance results are informational on an empty staging database. Missing fore
 
 ## Remaining controlled steps
 
-1. Approve an exact Facebook Page ID for staging.
-2. Create the Meta connector installation for that Page only.
-3. Add reviewed encrypted Vercel environment variables and server-side secret references through an authenticated Vercel dashboard or CLI session.
-4. Replace the fail-closed bootstrap with the repository Meta MCP runtime.
-5. Create or connect a dedicated Meta developer staging application through an authenticated human owner.
-6. Store a short-lived Page token only in encrypted secret storage.
-7. Run the manual `Meta Staging Readiness` workflow with confirmation `READ_ONLY`.
-8. Verify service health, MCP initialization, exact twelve-tool discovery, and one `meta_page_get` call.
+1. Verify that Meta App `1223350063226282` is the dedicated staging application under an authenticated human owner.
+2. Add reviewed encrypted Vercel environment variables and server-side secret references through an authenticated Vercel dashboard or CLI session.
+3. Replace the fail-closed bootstrap with the repository Meta MCP runtime.
+4. Store a short-lived Page token only in encrypted secret storage.
+5. Activate the pending connector only after app ownership, Page access, and least-privilege scopes are verified.
+6. Run the manual `Meta Staging Readiness` workflow with confirmation `READ_ONLY`.
+7. Verify service health, MCP initialization, exact twelve-tool discovery, and one `meta_page_get` call.
 
 ## Hold points
 
@@ -113,6 +133,7 @@ Do not:
 - restore or delete RealMatch without explicit authorization;
 - apply MCPMaster migrations to Battle or RealMatch;
 - fabricate or directly mutate Auth confirmation state;
+- mark the Meta connector active before human app ownership and Page access are verified;
 - create or connect a Meta application without an authenticated human owner;
 - commit or log provider, Supabase server, staff access, or refresh tokens;
 - expose webhooks before signature verification and ingress are reviewed;
