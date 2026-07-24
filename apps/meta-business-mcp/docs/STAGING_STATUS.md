@@ -14,6 +14,7 @@ The deployable Meta Business MCP implementation is present on `main`.
 - protected manual staging-readiness workflow
 - root `Dockerfile.vercel`
 - Vercel platform `PORT` and external-bind compatibility
+- fail-closed Meta App-token and Page-access proof command
 
 ## Vercel staging resource
 
@@ -94,8 +95,11 @@ A pending connector installation exists for exactly one allowlisted Page.
 - webhook health rows: none
 - provider networking: disabled
 - external writes: disabled
-- app ownership verification: pending human review
+- app Business Portfolio ownership verification: pending human review
+- technical App-token and Page-access proof: implemented but not yet run with a short-lived Meta token
 - exactly one `connector.meta.staging_configured` append-only audit event exists
+
+The repository command `npm run meta:staging:prove-access` now performs a fail-closed, read-only proof that a human `USER` token was issued by the configured App ID and can access the exact allowlisted Page. The report is redacted and the command never activates or mutates the connector. This proof does not replace human Business Portfolio ownership verification.
 
 ### RLS verification
 
@@ -118,13 +122,14 @@ Performance results are informational on an empty staging database. Missing fore
 
 ## Remaining controlled steps
 
-1. Verify that Meta App `1223350063226282` is the dedicated staging application under an authenticated human owner.
-2. Add reviewed encrypted Vercel environment variables and server-side secret references through an authenticated Vercel dashboard or CLI session.
-3. Replace the fail-closed bootstrap with the repository Meta MCP runtime.
-4. Store a short-lived Page token only in encrypted secret storage.
-5. Activate the pending connector only after app ownership, Page access, and least-privilege scopes are verified.
-6. Run the manual `Meta Staging Readiness` workflow with confirmation `READ_ONLY`.
-7. Verify service health, MCP initialization, exact twelve-tool discovery, and one `meta_page_get` call.
+1. Verify in Meta Business Manager that App `1223350063226282` is the dedicated staging application under the intended Business Portfolio and authenticated human owner.
+2. Issue short-lived human and debugger tokens through Meta's supported flow and run `npm run meta:staging:prove-access`.
+3. Add reviewed encrypted Vercel environment variables and server-side secret references through an authenticated Vercel dashboard or CLI session.
+4. Replace the fail-closed bootstrap with the repository Meta MCP runtime.
+5. Store a short-lived Page token only in encrypted secret storage.
+6. Activate the pending connector only after Business Portfolio ownership, App-token provenance, Page access, and least-privilege scopes are verified.
+7. Run the manual `Meta Staging Readiness` workflow with confirmation `READ_ONLY`.
+8. Verify service health, MCP initialization, exact twelve-tool discovery, and one `meta_page_get` call.
 
 ## Hold points
 
@@ -133,7 +138,7 @@ Do not:
 - restore or delete RealMatch without explicit authorization;
 - apply MCPMaster migrations to Battle or RealMatch;
 - fabricate or directly mutate Auth confirmation state;
-- mark the Meta connector active before human app ownership and Page access are verified;
+- mark the Meta connector active before human App ownership and Page access are verified;
 - create or connect a Meta application without an authenticated human owner;
 - commit or log provider, Supabase server, staff access, or refresh tokens;
 - expose webhooks before signature verification and ingress are reviewed;
